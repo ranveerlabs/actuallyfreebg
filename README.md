@@ -1,4 +1,6 @@
-# actuallyfree.bg
+# actuallyfreebg
+
+big tech cant stop me
 
 apparently this needed to be paywalled
 
