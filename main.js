@@ -56,41 +56,55 @@ async function process(file) {
   cancel.hidden = false
   document.querySelector('main').setAttribute('aria-busy', 'true')
   status.textContent = 'loading the remover. first run takes a little longer'
-  worker ??= new Worker(new URL('./worker.js', import.meta.url), { type: 'module' })
-  worker.onmessage = ({ data }) => {
-    if (data.progress) {
-      const { key, current, total } = data.progress
-      status.textContent = key.startsWith('fetch:')
-        ? `loading the remover ${Math.round(current / total * 100)}%`
-        : 'removing the background'
-      return
+  const run = device => {
+    worker?.terminate()
+    worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' })
+    worker.onmessage = ({ data }) => {
+      if (data.fallback) {
+        status.textContent = 'trying the CPU instead'
+        run('cpu')
+        return
+      }
+      if (data.progress) {
+        const { key, current, total } = data.progress
+        status.textContent = key.startsWith('fetch:')
+          ? `loading the remover ${Math.round(current / total * 100)}%`
+          : 'removing the background'
+        return
+      }
+      if (data.error) {
+        status.textContent = data.error
+        stop()
+        return
+      }
+      output = URL.createObjectURL(data.blob)
+      preview.src = output
+      preview.alt = 'image with the background removed'
+      showingOriginal = false
+      compare.textContent = 'show original'
+      compare.setAttribute('aria-pressed', 'false')
+      save.href = output
+      save.download = `${file.name.replace(/\.[^.]+$/, '')}-actuallyfree.png`
+      save.hidden = false
+      compare.hidden = false
+      cancel.hidden = true
+      busy = false
+      pick.disabled = false
+      document.querySelector('main').setAttribute('aria-busy', 'false')
+      status.textContent = 'done'
     }
-    if (data.error) {
-      status.textContent = data.error
+    worker.onerror = () => {
+      if (device === 'gpu') {
+        status.textContent = 'trying the CPU instead'
+        run('cpu')
+        return
+      }
+      status.textContent = 'the remover stopped. try a smaller image'
       stop()
-      return
     }
-    output = URL.createObjectURL(data.blob)
-    preview.src = output
-    preview.alt = 'image with the background removed'
-    showingOriginal = false
-    compare.textContent = 'show original'
-    compare.setAttribute('aria-pressed', 'false')
-    save.href = output
-    save.download = `${file.name.replace(/\.[^.]+$/, '')}-actuallyfree.png`
-    save.hidden = false
-    compare.hidden = false
-    cancel.hidden = true
-    busy = false
-    pick.disabled = false
-    document.querySelector('main').setAttribute('aria-busy', 'false')
-    status.textContent = 'done'
+    worker.postMessage({ file, device })
   }
-  worker.onerror = () => {
-    status.textContent = 'the remover stopped. try a smaller image'
-    stop()
-  }
-  worker.postMessage({ file, origin: location.origin })
+  run('gpu')
 }
 
 pick.onclick = () => input.click()
@@ -109,3 +123,4 @@ document.addEventListener('paste', event => {
   const file = [...event.clipboardData.items].find(item => item.type.startsWith('image/'))?.getAsFile()
   if (file) { event.preventDefault(); process(file) }
 })
+

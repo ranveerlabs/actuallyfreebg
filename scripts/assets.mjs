@@ -1,26 +1,22 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 
 const base = 'https://staticimgly.com/@imgly/background-removal-data/1.7.0/dist/'
-const dir = new URL('../public/models/', import.meta.url)
+const dir = new URL('../public/models/1.7.0/', import.meta.url)
 await mkdir(dir, { recursive: true })
-const response = await fetch(new URL('resources.json', base))
-if (!response.ok) throw new Error(`resources: ${response.status}`)
-const resources = await response.json()
-const selected = Object.fromEntries(Object.entries(resources).filter(([key]) =>
-  key === '/models/isnet_fp16' || key === '/onnxruntime-web/ort-wasm-simd-threaded.wasm' || key === '/onnxruntime-web/ort-wasm-simd-threaded.mjs'
-))
-if (Object.keys(selected).length !== 3) throw new Error('resources missing')
+const selected = JSON.parse(await readFile(new URL('./resources-1.7.0.json', import.meta.url), 'utf8'))
+const valid = (data, chunk) => data.length === chunk.offsets[1] - chunk.offsets[0] && createHash('sha256').update(data).digest('hex') === chunk.hash
 for (const resource of Object.values(selected)) {
   for (const chunk of resource.chunks) {
     const path = new URL(chunk.name, dir)
     try {
       const file = await readFile(path)
-      if (file.length === chunk.offsets[1] - chunk.offsets[0]) continue
+      if (valid(file, chunk)) continue
     } catch {}
     const res = await fetch(new URL(chunk.name, base))
     if (!res.ok) throw new Error(`${chunk.name}: ${res.status}`)
     const data = Buffer.from(await res.arrayBuffer())
-    if (data.length !== chunk.offsets[1] - chunk.offsets[0]) throw new Error('incomplete download')
+    if (!valid(data, chunk)) throw new Error(`invalid asset: ${chunk.name}`)
     await writeFile(path, data)
   }
 }

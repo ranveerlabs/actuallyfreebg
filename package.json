@@ -6,7 +6,7 @@
   "scripts": {
     "assets": "node scripts/assets.mjs",
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
-    "build": "vite build",
+    "build": "npm run assets && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5173 --strictPort"
   },
   "dependencies": {
