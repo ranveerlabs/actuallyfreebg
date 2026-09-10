@@ -2,22 +2,24 @@
 
 big tech cant stop me
 
-apparently this needed to be paywalled
+[actuallyfreebg.vercel.app](https://actuallyfreebg.vercel.app)
 
-Drop an image in, download the cutout. runs in your browser
+Drop an image in, get a transparent PNG. no uploads, cookies, ads or tracking
 
-Node 22.12+ or 24+. Run `npm ci`, `npm run assets`, then `npm run dev`
+Node 22.12+ or 24+
 
-Open http://127.0.0.1:5173
+```
+npm ci
+npm run assets
+npm run dev
+```
 
-`npm run build` downloads and verifies the pinned model files then writes the site to `dist`. `vercel.json` handles the build and response headers on Vercel
+opens at http://127.0.0.1:5173
 
-The model files come from IMG.LY during the build, their SHA-256 hashes are checked against `scripts/resources-1.7.0.json`. The browser loads them from `/models/1.7.0/` on the same site. Images never leave the browser. PNG, JPG and WebP, up to 30 MB and 25 megapixels
+`npm run build` fetches the model files and builds into `dist`. Vercel settings are in `vercel.json`
 
-WebGPU runs first when available. A failed GPU run retries in a fresh WASM worker. Browsers without a GPU adapter use WASM directly
+The remover is [IMG.LY's](https://github.com/imgly/background-removal-js). Model files get downloaded at build time, hashes are in `scripts/resources-1.7.0.json`. Your browser loads them from this site, first run takes a bit
 
-The production CSP blocks third-party connections. No analytics packages or Vercel Toolbar, keep those disabled in the project settings
+WebGPU first, WASM fallback. PNG, JPG and WebP up to 30 MB and 25 megapixels
 
-Background removal uses [IMG.LY's library](https://github.com/imgly/background-removal-js). First run loads the model, it takes a bit
-
-AGPLv3. no ads, cookies or tracking
+AGPLv3
