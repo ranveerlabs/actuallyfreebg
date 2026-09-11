@@ -1,25 +1,24 @@
 import { removeBackground } from '@imgly/background-removal'
+import { selectDevice } from './capabilities.js'
 
 self.onmessage = async ({ data }) => {
+  let device = 'cpu'
   try {
-    let device = data.device
-    if (device === 'gpu') {
-      const adapter = await navigator.gpu?.requestAdapter()
-      if (!adapter) device = 'cpu'
-    }
+    device = data.device === 'cpu' ? 'cpu' : await selectDevice(navigator.gpu, data.small)
+    self.postMessage({ backend: device })
     const blob = await removeBackground(data.file, {
-      publicPath: new URL(`${import.meta.env.BASE_URL}models/1.7.0/`, self.location.origin).href,
-      model: 'isnet_fp16',
+      publicPath: new URL(`${import.meta.env.BASE_URL}models/1.7.0-r2/`, self.location.origin).href,
+      model: data.small ? 'isnet_quint8' : 'isnet_fp16',
       device,
-      output: { format: 'image/png' },
+      output: { format: data.raw ? 'image/x-rgba8' : 'image/png' },
       fetchArgs: { credentials: 'omit' },
       progress: (key, current, total) => self.postMessage({ progress: { key, current, total } })
     })
-    self.postMessage({ blob })
+    self.postMessage({ blob, raw: data.raw })
   } catch (error) {
     console.error(error)
-    self.postMessage(data.device === 'gpu'
+    self.postMessage(device === 'gpu'
       ? { fallback: true }
-      : { error: 'couldnt remove the background. try another image' })
+      : { error: 'couldnt finish. check your connection and try again' })
   }
 }
