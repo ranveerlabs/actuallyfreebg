@@ -26,4 +26,17 @@ for (const [key, resource] of Object.entries(selected)) {
   }
 }
 await writeFile(new URL('resources.json', dir), JSON.stringify(selected))
+const mobile = JSON.parse(await readFile(new URL('./mobile-model.json', import.meta.url), 'utf8'))
+const mobileDir = new URL('../public/models/u2netp-v1/', import.meta.url)
+await mkdir(mobileDir, { recursive: true })
+const modelPath = new URL('model.onnx', mobileDir)
+let model
+try { model = await readFile(modelPath) } catch {}
+if (!model || createHash('sha256').update(model).digest('hex') !== mobile.sha256) {
+  const response = await fetch(mobile.url)
+  if (!response.ok) throw new Error('mobile model: ' + response.status)
+  model = Buffer.from(await response.arrayBuffer())
+  if (createHash('sha256').update(model).digest('hex') !== mobile.sha256) throw new Error('invalid mobile model')
+  await writeFile(modelPath, model)
+}
 console.log('models ready')

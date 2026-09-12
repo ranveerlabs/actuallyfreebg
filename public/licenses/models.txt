@@ -1,0 +1,6 @@
+U2NETP is from U-2-Net by Xuebin Qin and contributors
+https://github.com/xuebinqin/U-2-Net
+Apache-2.0, see U-2-Net.txt
+
+ONNX conversion distributed by rembg
+https://github.com/danielgatis/rembg

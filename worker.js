@@ -1,9 +1,16 @@
-import { removeBackground } from '@imgly/background-removal'
 import { selectDevice } from './capabilities.js'
 
 self.onmessage = async ({ data }) => {
   let device = 'cpu'
   try {
+    if (data.small) {
+      self.postMessage({ backend: 'cpu' })
+      const { cutout } = await import('./mobile.js')
+      const blob = await cutout(data.file, (key, current, total) => self.postMessage({ progress: { key, current, total } }))
+      self.postMessage({ blob, raw: true })
+      return
+    }
+    const { removeBackground } = await import('@imgly/background-removal')
     device = data.device === 'cpu' ? 'cpu' : await selectDevice(navigator.gpu, data.small)
     self.postMessage({ backend: device })
     const blob = await removeBackground(data.file, {

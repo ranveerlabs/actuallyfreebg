@@ -18,7 +18,7 @@ export async function prepare(file, compact, signal) {
       if (signal.aborted) abort()
     })
     check()
-    const scale = compact ? Math.min(1, 2048 / Math.max(img.naturalWidth, img.naturalHeight)) : 1
+    const scale = compact ? Math.min(1, 1536 / Math.max(img.naturalWidth, img.naturalHeight)) : 1
     const width = Math.max(1, Math.round(img.naturalWidth * scale))
     const height = Math.max(1, Math.round(img.naturalHeight * scale))
     if (!compact && width * height > 25000000) throw new Error('try an image under 25 megapixels')
